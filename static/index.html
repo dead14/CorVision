@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CorDeep - Deteksi Korosi</title>
+    <link rel="stylesheet" href="/static/style.css?v=2">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Main Application Card -->
+        <div class="app-card">
+            
+            <!-- Area 1: Upload (Tampil di awal) -->
+            <div class="upload-section" id="drop-area">
+                <h1>CorDeep</h1>
+                <p>Unggah foto logam atau pipa berkarat untuk dianalisis oleh AI.</p>
+                
+                <input type="file" id="fileElem" accept="image/*" style="display:none">
+                <label class="upload-btn" for="fileElem">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <span>Pilih Gambar Inspeksi</span>
+                </label>
+                <p class="upload-hint">Atau seret & lepas gambar ke sini</p>
+                <p style="font-size: 11.5px; color: #888; margin-top: 12px; font-weight: 500;">💡 Tip: Letakkan objek referensi (koin/penggaris) di dalam frame foto untuk estimasi dimensi.</p>
+            </div>
+
+            <!-- Area 2: Preview & Hasil (Tampil setelah upload) -->
+            <div id="preview-section" class="hidden">
+                
+                <!-- Gambar Utama (Dua Kolom) -->
+                <div class="image-comparison-wrapper">
+                    <!-- Kolom 1: Foto Asli & Tools -->
+                    <div class="image-container">
+                        <img id="original-image" src="" alt="Asli">
+                        <canvas id="roi-canvas"></canvas>
+                        
+                        <!-- Calibration Input Box -->
+                        <div class="glass-controls hidden" id="calibration-input-box" style="top: 50%; bottom: auto; left: 50%; transform: translate(-50%, -50%); flex-direction: column; align-items: center; z-index: 30; padding: 15px;">
+                            <p style="color: white; font-size: 13px; margin: 0 0 8px 0; font-weight: 500;">Ukuran Sisi ArUco (cm):</p>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="number" step="0.1" id="calib-real-length" placeholder="Misal: 5" style="width: 90px; padding: 8px; border-radius: 6px; border: none; outline: none; font-family: inherit;">
+                                <span style="color: white; font-weight: 500;">cm</span>
+                            </div>
+                            <div style="display: flex; gap: 8px; width: 100%; margin-top: 12px;">
+                                <button id="calib-cancel-btn" class="secondary-btn" style="flex: 1; padding: 6px; border: none; background: rgba(255,255,255,0.2); color: white;">Batal</button>
+                                <button id="calib-save-btn" class="secondary-btn" style="flex: 1; padding: 6px; border: none; background: white; color: black;">Analisis</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Kolom 2: Hasil AI -->
+                    <div class="image-container" style="background: #fafafa;">
+                        <!-- Loading Spinner -->
+                        <div class="loading hidden" id="loading-spinner">
+                            <div class="spinner"></div>
+                            <p style="font-size: 13px; font-weight: 500;">AI Menganalisis...</p>
+                        </div>
+                        <img id="result-image" class="hidden" src="" alt="Hasil">
+                    </div>
+                </div>
+                
+                <!-- Statistik (Bottom Half) -->
+                <div class="stats-container hidden" id="result-stats">
+                    <div class="stats-header-wrapper" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                        <div class="stats-header">
+                            <h2 id="corrosion-status">Aman</h2>
+                            <p>Status Keparahan Korosi</p>
+                        </div>
+                        
+                        <!-- ROI Controls -->
+                        <div class="roi-controls-inline hidden" id="roi-controls">
+                            <button id="calibrate-btn" class="pill-btn" title="Kalibrasi ArUco (cm²)">
+                                <span class="btn-text">Kalibrasi ArUco</span>
+                                <span class="btn-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+                                </span>
+                            </button>
+                            <button id="heatmap-btn" class="pill-btn">
+                                <span class="btn-text">Mode Heatmap</span>
+                                <span class="btn-icon">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>
+                                </span>
+                            </button>
+                            <button id="draw-btn" class="secondary-btn">Tandai Objek</button>
+                            <button id="clear-roi-btn" class="secondary-btn hidden" style="color: var(--accent-danger);">Hapus</button>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-bar">
+                        <div class="progress" id="progress-fill"></div>
+                    </div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div style="display: flex; align-items: baseline; gap: 6px;">
+                                <span class="stat-value" id="corrosion-percentage">0%</span>
+                                <span class="stat-label" id="corrosion-cm2" style="color: var(--accent-safe); font-weight: 700; font-size: 13px;"></span>
+                            </div>
+                            <span class="stat-label">Area Terkorosi</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-value" id="ai-confidence">0%</span>
+                            <span class="stat-label">AI Confidence</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-value" id="object-type">Selesai</span>
+                            <span class="stat-label">Status Proses</span>
+                        </div>
+                    </div>
+                    
+                    <div class="breakdown-box hidden" id="breakdown-box">
+                        <p style="font-size: 13px; margin-bottom: 4px;"><strong>Tipe Korosi:</strong> <span id="light-pct">0%</span> Permukaan (Kuning) | <span id="severe-pct">0%</span> Indikasi Pitting (Merah)</p>
+                        <p class="disclaimer">*Disclaimer: Alat ini melakukan skrining visual 2D (ISO 4628-3). Pengukuran Metal Loss absolut butuh validasi NDT (UT/Laser).*</p>
+                    </div>
+
+                    <button id="reset-btn" class="secondary-btn" style="width: 100%; margin-top: 20px;">Analisis Gambar Lain</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    
+    <script src="/static/script.js?v=2"></script>
+</body>
+</html>
