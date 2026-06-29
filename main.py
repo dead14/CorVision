@@ -17,7 +17,7 @@ import torch
 import segmentation_models_pytorch as smp
 import os
 
-app = FastAPI(title="CorDeep API")
+app = FastAPI(title="AURA API")
 
 # Mount static folder
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -30,10 +30,10 @@ model = smp.Unet(encoder_name="resnet34", encoder_weights=None, in_channels=3, c
 if os.path.exists(model_path):
     model.load_state_dict(torch.load(model_path, map_location=device))
     model.eval()
-    print("✅ BERHASIL: Otak AI (model_korosi_terbaik.pth) berhasil dimuat!")
+    print("[BERHASIL] Otak AI (model_korosi_terbaik.pth) berhasil dimuat!")
 else:
-    print(f"⚠️ PERINGATAN: File {model_path} belum ditemukan di folder ini!")
-    print("Silakan download dari Colab dan pindahkan ke folder CorDeep.")
+    print(f"[PERINGATAN] File {model_path} belum ditemukan di folder ini!")
+    print("Silakan download dari Colab dan pindahkan ke folder AURA.")
 
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
@@ -121,13 +121,10 @@ async def predict_corrosion(
         mask_bool = pred_mask_resized == 1.0
         
     # Terapkan ROI Mask jika ada
+    total_pixels = original_size[0] * original_size[1]
     if user_roi_mask is not None:
         mask_bool = mask_bool & (user_roi_mask == 255)
         corrosion_pixels = np.count_nonzero(mask_bool)
-        total_pixels = np.count_nonzero(user_roi_mask)
-    else:
-        total_pixels = original_size[0] * original_size[1]
-        
     percentage = (corrosion_pixels / total_pixels) * 100 if total_pixels > 0 else 0
     
     # Kalkulasi Confidence Score (Probabilitas Rata-rata dari area karat)

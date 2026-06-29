@@ -3,27 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CorDeep - Deteksi Korosi</title>
-    <link rel="stylesheet" href="/static/style.css?v=2">
+    <title>AURA - Automated Rust Analyzer</title>
+    <link rel="stylesheet" href="/static/style.css?v=4">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <!-- Main Application Card -->
         <div class="app-card">
-            
             <!-- Area 1: Upload (Tampil di awal) -->
             <div class="upload-section" id="drop-area">
-                <h1>CorDeep</h1>
-                <p>Unggah foto logam atau pipa berkarat untuk dianalisis oleh AI.</p>
+                <div class="upload-header" style="margin-bottom: 16px; text-align: center;">
+                    <!-- Logo AURA -->
+                    <img src="/static/logo.png" alt="AURA Logo" style="height: 100px; margin-bottom: 24px; object-fit: contain;">
+                    
+                    <h2 style="font-size: 18px; font-weight: 600; color: #222; margin: 0;">Upload Foto Inspeksi</h2>
+                    <p style="color: #666; font-size: 13px; margin: 4px 0 0 0;">Pilih atau seret gambar logam berkarat ke kotak di bawah ini.</p>
+                </div>
                 
-                <input type="file" id="fileElem" accept="image/*" style="display:none">
-                <label class="upload-btn" for="fileElem">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                    <span>Pilih Gambar Inspeksi</span>
-                </label>
-                <p class="upload-hint">Atau seret & lepas gambar ke sini</p>
-                <p style="font-size: 11.5px; color: #888; margin-top: 12px; font-weight: 500;">💡 Tip: Letakkan objek referensi (koin/penggaris) di dalam frame foto untuk estimasi dimensi.</p>
+                <div class="upload-box" style="border: 2px dashed #ddd; border-radius: 12px; padding: 40px 20px; width: 100%; max-width: 500px; display: flex; flex-direction: column; align-items: center; background: #fafafa; transition: border 0.2s;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 12px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    
+                    <h3 style="font-size: 15px; font-weight: 600; margin-bottom: 6px; color: #333;">Choose a file or drag & drop it here.</h3>
+                    <p style="font-size: 13px; color: #888; margin-bottom: 20px;">JPEG, PNG format, up to 20 MB.</p>
+                    
+                    <input type="file" id="fileElem" accept="image/*" style="display:none">
+                    <label class="upload-btn-new" for="fileElem" style="background: white; color: #333; padding: 8px 16px; border-radius: 6px; border: 1px solid #ddd; font-weight: 500; font-size: 13px; cursor: pointer; transition: background 0.2s, box-shadow 0.2s;">
+                        Browse File
+                    </label>
+                </div>
+                
+                <div class="upload-hint-box" style="margin-top: 20px; background: #f0f7ff; padding: 12px; border-radius: 8px; border: 1px solid #cce0ff; text-align: left; width: 100%; max-width: 500px;">
+                    <p style="font-size: 12px; color: #0055cc; margin: 0; line-height: 1.4;">
+                        &#128161; <strong>Tip Kalibrasi:</strong> Letakkan stiker <strong>ArUco Marker</strong> (bentuk hitam-putih mirip QR Code) di sebelah karat saat mengambil foto agar aplikasi bisa mengonversi persentase karat menjadi hitungan absolut (cm²).
+                    </p>
+                </div>
             </div>
 
             <!-- Area 2: Preview & Hasil (Tampil setelah upload) -->
@@ -37,7 +51,7 @@
                         <canvas id="roi-canvas"></canvas>
                         
                         <!-- Calibration Input Box -->
-                        <div class="glass-controls hidden" id="calibration-input-box" style="top: 50%; bottom: auto; left: 50%; transform: translate(-50%, -50%); flex-direction: column; align-items: center; z-index: 30; padding: 15px;">
+                        <div class="hidden" id="calibration-input-box" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; z-index: 30; padding: 20px; background: rgba(0,0,0,0.85); border-radius: 12px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
                             <p style="color: white; font-size: 13px; margin: 0 0 8px 0; font-weight: 500;">Ukuran Sisi ArUco (cm):</p>
                             <div style="display: flex; gap: 8px; align-items: center;">
                                 <input type="number" step="0.1" id="calib-real-length" placeholder="Misal: 5" style="width: 90px; padding: 8px; border-radius: 6px; border: none; outline: none; font-family: inherit;">
@@ -63,7 +77,7 @@
                 
                 <!-- Statistik (Bottom Half) -->
                 <div class="stats-container hidden" id="result-stats">
-                    <div class="stats-header-wrapper" style="display: flex; justify-content: space-between; align-items: flex-end;">
+                    <div class="stats-header-wrapper">
                         <div class="stats-header">
                             <h2 id="corrosion-status">Aman</h2>
                             <p>Status Keparahan Korosi</p>
@@ -110,18 +124,11 @@
                         </div>
                     </div>
                     
-                    <div class="breakdown-box hidden" id="breakdown-box">
-                        <p style="font-size: 13px; margin-bottom: 4px;"><strong>Tipe Korosi:</strong> <span id="light-pct">0%</span> Permukaan (Kuning) | <span id="severe-pct">0%</span> Indikasi Pitting (Merah)</p>
-                        <p class="disclaimer">*Disclaimer: Alat ini melakukan skrining visual 2D (ISO 4628-3). Pengukuran Metal Loss absolut butuh validasi NDT (UT/Laser).*</p>
-                    </div>
 
                     <button id="reset-btn" class="secondary-btn" style="width: 100%; margin-top: 20px;">Analisis Gambar Lain</button>
                 </div>
             </div>
 
-        </div>
-    </div>
-    
     <script src="/static/script.js?v=2"></script>
 </body>
 </html>

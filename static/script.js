@@ -94,6 +94,7 @@ function handleFiles(files) {
             imgNaturalWidth = originalImage.naturalWidth;
             imgNaturalHeight = originalImage.naturalHeight;
             roiControls.classList.remove('hidden');
+    document.querySelector('.container').classList.add('preview-mode');
             
             // Start analyzing initially without ROI
             analyzeImage(file);
@@ -221,14 +222,29 @@ function updateStats(percentage, confidence = 0, severePct = 0, lightPct = 0, ab
     // Update progress bar
     progressFill.style.width = end + '%';
     
-    // Update Breakdown
+    // Update Breakdown & Action Plan
     const breakdownBox = document.getElementById('breakdown-box');
     const lightSpan = document.getElementById('light-pct');
     const severeSpan = document.getElementById('severe-pct');
+    const actionPlanSpan = document.getElementById('action-plan');
+    
     if (breakdownBox && lightSpan && severeSpan) {
         breakdownBox.classList.remove('hidden');
         lightSpan.textContent = parseFloat(lightPct || 0).toFixed(1) + '%';
         severeSpan.textContent = parseFloat(severePct || 0).toFixed(1) + '%';
+        
+        if (actionPlanSpan) {
+            if (end >= 1.0 || severePct > 20) {
+                actionPlanSpan.textContent = "Segera lakukan inspeksi ketebalan (Ultrasonic Testing / UT). Persiapkan Surface Preparation ke standar ISO 8501 Sa 2.5.";
+                actionPlanSpan.style.color = "var(--accent-danger)";
+            } else if (end >= 0.05) {
+                actionPlanSpan.textContent = "Lakukan pemantauan berkala dan perbaikan coating (Coating Repair).";
+                actionPlanSpan.style.color = "var(--accent-warning)";
+            } else {
+                actionPlanSpan.textContent = "Tidak ada tindakan khusus. Aman.";
+                actionPlanSpan.style.color = "var(--accent-safe)";
+            }
+        }
     }
     
     // Update cm2
@@ -247,6 +263,10 @@ function resetUI() {
     dropArea.classList.remove('hidden');
     previewSection.classList.add('hidden');
     roiControls.classList.add('hidden');
+    
+    // Kembalikan ukuran card ke default (lebih sempit)
+    document.querySelector('.container').classList.remove('preview-mode');
+    
     fileInput.value = '';
     polygonPoints = [];
     isDrawingMode = false;
@@ -294,11 +314,13 @@ if (clearRoiBtn) {
 
 if (roiCanvas) {
     roiCanvas.addEventListener('mousedown', (e) => {
-        const rect = roiCanvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
         if (!isDrawingMode) return;
+        
+        const rect = roiCanvas.getBoundingClientRect();
+        const scaleX = roiCanvas.width / rect.width;
+        const scaleY = roiCanvas.height / rect.height;
+        const x = (e.clientX - rect.left) * scaleX;
+        const y = (e.clientY - rect.top) * scaleY;
         
         polygonPoints.push({x, y});
         drawPolygon();
